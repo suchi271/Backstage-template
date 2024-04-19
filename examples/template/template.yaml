@@ -1,0 +1,326 @@
+# apiVersion: scaffolder.backstage.io/v1beta3
+# # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-template
+# kind: Template
+# metadata:
+#   name: example-nodejs-template
+#   title: Example Node.js Template
+#   description: An example template for the scaffolder that creates a simple Node.js service
+# spec:
+#   owner: user:guest
+#   type: service
+
+#   # These parameters are used to generate the input form in the frontend, and are
+#   # used to gather input data for the execution of the template.
+#   parameters:
+#     - title: Fill in some steps
+#       required:
+#         - name
+#       properties:
+#         name:
+#           title: Name
+#           type: string
+#           description: Unique name of the component
+#           ui:autofocus: true
+#           ui:options:
+#             rows: 5
+#     - title: Choose a location
+#       required:
+#         - repoUrl
+#       properties:
+#         repoUrl:
+#           title: Repository Location
+#           type: string
+#           ui:field: RepoUrlPicker
+#           ui:options:
+#             allowedHosts:
+#               - github.com
+
+#   # These steps are executed in the scaffolder backend, using data that we gathered
+#   # via the parameters above.
+#   steps:
+#     # Each step executes an action, in this case one templates files into the working directory.
+#     - id: fetch-base
+#       name: Fetch Base
+#       action: fetch:template
+#       input:
+#         url: ./content
+#         values:
+#           name: ${{ parameters.name }}
+
+#     # This step publishes the contents of the working directory to GitHub.
+#     - id: publish
+#       name: Publish
+#       action: publish:github
+#       input:
+#         allowedHosts: ['github.com']
+#         description: This is ${{ parameters.name }}
+#         repoUrl: ${{ parameters.repoUrl }}
+
+#     # The final step is to register our new component in the catalog.
+#     - id: register
+#       name: Register
+#       action: catalog:register
+#       input:
+#         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+#         catalogInfoPath: '/catalog-info.yaml'
+
+#   # Outputs are displayed to the user after a successful execution of the template.
+#   output:
+#     links:
+#       - title: Repository
+#         url: ${{ steps['publish'].output.remoteUrl }}
+#       - title: Open in catalog
+#         icon: catalog
+#         entityRef: ${{ steps['register'].output.entityRef }}
+
+
+# Name: Create_AKS_Cluster.yaml
+# Purpose: Captures the info needed to generate the deploy.tfvars file in the repo aks-terraform-platform-deployments. 
+#          Creates a PR request for the changes in the aks-terraform-platform-deployments repo under a branch named "Create_Cluster_<new cluster name>" so that the platform engineering team can review and approve. 
+
+owner: group:developer-enablement
+type: aks
+
+# These parameters are used to generate the input form in the frontend, and are
+# used to gather input data for the execution of the template
+parameters:
+  - title: High Level
+    required:
+      - security_zone
+      - environment
+      - location
+    properties:
+      security_zone:
+        title: Security Zone
+        type: string
+        description: Security Zone
+        default: "gen"
+        enum:
+          - gen
+          - pci
+          - pii
+        enumNames:
+          - General
+          - PCI
+          - PII
+      environment:
+        title: Environment
+        type: string
+        description: The list of environments in which the product team would like to operate.
+        default: "sbx"
+        enum:
+          - sbx
+          - np
+          - qa
+          - prod
+        enumNames:
+          - Sandbox
+          - Non-Prod
+          - QA
+          - Prod
+      location:
+        title: Location of Cluster
+        type: string
+        description: What Azure region/location will the AKS cluster be running in.
+        default: westus2
+        enum:
+          - eastus2
+          - westus2
+        enumNames:
+          - East US
+          - West US         
+  - title: Cluster Subscription
+    required:
+      - cluster_subscription
+    properties:
+      cluster_subscription:
+        title: Cluster Subscription
+        type: string
+        description: The name of the Subscription the Cluster will be in
+        default: sub-enterprise-sbx
+        # TODO
+        enum:
+          - sub-enterprise-sbx
+          - sub-enterprise-np
+          - sub-enterprise-prod      
+  - title: Resource groups
+    required:
+      - cluster_rg
+      - networking_rg
+    properties:
+      cluster_rg:
+        title: Cluster Resource Group
+        type: string
+        description: The name of the Resource Group the Cluster will be in
+        default: "rg-oneclickmigration-aks"
+      networking_rg:
+        title: Networking Resource Group
+        type: string
+        description: The name of the Resource Group the Networking Vnets and Subnets are in.
+        default: "rg-oneclickmigration-network"
+      acr_rg:
+        title: Container Registry Resource Group
+        type: string
+        description: The name of the Resource Group Holding the Container Registry the
+          Cluster will be attached to.
+        default: "rg-oneclickmigration-acr"
+
+  # - title: Resource Selection
+  #   required:
+  #     - acr
+  #     - vnet
+  #     - route_tables
+  #     - private_dns_zone_id
+  #   properties:
+  #     acr:
+  #       title: Azure Container Registry
+  #       description: The name of the Container Regisrt the Cluster will be attached to.
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         subscription: cluster_subscription
+  #         resource_type: Microsoft.ContainerRegistry/registries
+  #     vnet:
+  #       title: Virtual Network
+  #       description: Name of the vNet the cluster will be running on.
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         subscription: cluster_subscription
+  #         resource_type: Microsoft.Network/virtualNetworks
+  #         regex_filters:
+  #           - metadata.name: .*{{security_zone}}-int-.*
+  #     route_tables:
+  #       title: Route Tables
+  #       description: List of Route Tables to include
+  #       type: array
+  #       items:
+  #         type: string
+  #         ui:field: azResourceSelector
+  #         ui:options:
+  #           subscription: cluster_subscription
+  #           resource_type: Microsoft.Network/routeTables
+  #       uniqueItems: true
+  #     private_dns_zone_id:
+  #       title: Private DNS Zone Id
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         resource_type: Microsoft.Network/privateDnsZones
+  #         regex_filters:
+  #           - metadata.name: privatelink.{{location}}.azmk8s.io$
+  # - title: Subnet Selection
+  #   required:
+  #     - subnet_id
+  #     - subnet_lb_id
+  #     - subnet_workernodes_id
+  #   properties:
+
+  #     subnet_id:
+  #       title: System Subnet
+  #       description: Name of the SubNet for the System Node Pool
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         extra_input_filters:
+  #           - spec.contoso_labels.vnet: vnet
+  #         subscription: cluster_subscription
+  #         resource_type: Microsoft.Network/virtualNetworks/subnets
+  #         regex_filters:
+  #           - metadata.name: .*akssys.*
+  #     subnet_lb_id:
+  #       title: Subnet Load Balancer
+  #       description: Name of the SubNet Load Balancer
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         extra_input_filters:
+  #           - spec.contoso_labels.vnet: vnet
+  #         subscription: cluster_subscription
+  #         resource_type: Microsoft.Network/virtualNetworks/subnets
+  #         regex_filters:
+  #           - metadata.name: .*akslb.*
+  #     subnet_workernodes_id:
+  #       title: Worker Subnet
+  #       description: Name of the SubNet for the Worker Node Pool
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         extra_input_filters:
+  #           - spec.contoso_labels.vnet: vnet
+  #         subscription: cluster_subscription
+  #         resource_type: Microsoft.Network/virtualNetworks/subnets
+  #         regex_filters:
+  #           - metadata.name: .*akswkr.*
+  #     subnet_akv_id:
+  #       title: AKS Vault Subnet
+  #       description: Name of the SubNet for the AKS Vault
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         extra_input_filters:
+  #           - spec.contoso_labels.vnet: vnet
+  #         subscription: cluster_subscription
+  #         resource_type: Microsoft.Network/virtualNetworks/subnets
+  #         regex_filters:
+  #           - metadata.name: .*akv.*
+  #     subnet_acr_id:
+  #       title: AKS Container Registry Subnet
+  #       description: Name of the SubNet for AKS Container Registry
+  #       type: string
+  #       ui:field: azResourceSelector
+  #       ui:options:
+  #         extra_input_filters:
+  #           - spec.contoso_labels.vnet: vnet
+  #         subscription: cluster_subscription
+  #         resource_type: Microsoft.Network/virtualNetworks/subnets
+  #         regex_filters:
+  #           - metadata.name: .*acr.*
+
+steps:
+  # - id: dns_info
+  #   name: Get DNS Information from the Catalog
+  #   action: catalog:fetch
+  #   input:
+  #     entityRef: ${{ parameters.private_dns_zone_id }}
+
+  # - id: subscription_info
+  #   name: Get Subscription Information from the Catalog
+  #   action: catalog:fetch
+  #   input:
+  #     entityRef: ${{ parameters.cluster_subscription }}
+
+  - id: fetch-tfvars
+    name: Fetch Terraform Vars file
+    action: fetch:template
+    input:
+      url: ../template_files/cluster/
+      targetPath: ${{ parameters.environment }}/${{ parameters.cluster_subscription }}/aks-${{ parameters.security_zone }}-01-${{ parameters.environment }}
+      values:
+        cluster_id: "01"
+        security_zone: ${{ parameters.security_zone }}
+        location: ${{ parameters.location }}
+        environment: ${{ parameters.environment }}
+        cluster_subscription: 74d71e41-f04b-4d6f-ac02-a984373c50b1
+        cluster_rg: ${{ parameters.cluster_rg }}
+        networking_rg: ${{ parameters.networking_rg }}
+        vnet: ${{ parameters.vnet }}
+        subnet_id: "/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourceGroups/rg-oneclickmigration-network/providers/Microsoft.Network/virtualNetworks/vnet-oneclickmigration/subnets/sn-systemnodes"
+        subnet_lb_id: "/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourceGroups/rg-oneclickmigration-network/providers/Microsoft.Network/virtualNetworks/vnet-oneclickmigration/subnets/sn-loadbalancer"
+        subnet_workernodes_id: "/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourceGroups/rg-oneclickmigration-network/providers/Microsoft.Network/virtualNetworks/vnet-oneclickmigration/subnets/sn-workernodes"
+        subnet_akv_id: "/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourceGroups/rg-oneclickmigration-network/providers/Microsoft.Network/virtualNetworks/vnet-oneclickmigration/subnets/sn-akv"
+        subnet_acr_id: "/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourceGroups/rg-oneclickmigration-network/providers/Microsoft.Network/virtualNetworks/vnet-oneclickmigration/subnets/sn-acr"
+        route_tables: "[\"/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourceGroups/rg-oneclickmigration-network/providers/Microsoft.Network/routeTables/aks-egress-fwrt\",]"
+        dns_zone_scope: "/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourceGroups/rg-oneclickmigration-network/providers/Microsoft.Network/privateDnsZones/privatelink.westus2.azmk8s.io"
+        acr_resource_group: ${{ parameters.acr_rg }}
+        acr: "/subscriptions/74d71e41-f04b-4d6f-ac02-a984373c50b1/resourcegroups/rg-oneclickmigration-acr/providers/Microsoft.ContainerRegistry/registries/acroneclickmigration"
+        sc_key: aks-${{ parameters.security_zone }}-01-${{ parameters.environment }}.tfstate
+
+  - id: pr-template-into-exsitng-repo
+    name: Create Pull Request for Template into Existing repo
+    action: publish:github:pull-request
+    input:
+      repoUrl: github.com?repo=aks-terraform-platform-deployments&owner=Microsoft-Consulting-Services
+      branchName: Create_Cluster_aks_${{ parameters.security_zone }}_01_${{ parameters.environment }}
+      title: Create AKS Cluster aks-${{ parameters.security_zone }}-01-${{ parameters.environment }}
+      description: Sets up the tf vars file for the new AKS Cluster

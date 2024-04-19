@@ -1,0 +1,15 @@
+{
+  "extends": "@backstage/cli/config/tsconfig.json",
+  "development": { "host": "host.docker.internal" },
+  "include": [
+    "packages/*/src",
+    "plugins/*/src",
+    "plugins/*/dev",
+    "plugins/*/migrations"
+  ],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "outDir": "dist-types",
+    "rootDir": "."
+  }
+}

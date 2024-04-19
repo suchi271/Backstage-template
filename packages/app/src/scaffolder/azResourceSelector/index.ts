@@ -1,0 +1,1 @@
+export { AzResourceSelectorFieldExtension } from './extensions';
