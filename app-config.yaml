@@ -6,14 +6,12 @@ organization:
   name: My Company
 
 backend:
-  database:
-    # config options: https://node-postgres.com/apis/client
-    client: pg
-    connection:
-      host: ${POSTGRES_HOST}
-      port: ${POSTGRES_PORT}
-      user: "postgres"
-      password: "admin"
+  # Used for enabling authentication, secret is shared by all backend plugins
+  # See https://backstage.io/docs/auth/service-to-service-auth for
+  # information on the format
+  # auth:
+  #   keys:
+  #     - secret: ${BACKEND_SECRET}
   baseUrl: http://localhost:7007
   listen:
     port: 7007
@@ -30,14 +28,20 @@ backend:
     Access-Control-Allow-Origin: '*'
   # This is for local development only, it is not recommended to use this in production
   # The production database configuration is stored in app-config.production.yaml
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
   # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
 
 integrations:
+  azure:
+    - host: dev.azure.com
+      token: ${AZURE_TOKEN}
   github:
     - host: github.com
+      token: ${GITHUB_TOKEN}
       # This is a Personal Access Token or PAT from GitHub. You can find out how to generate this token, and more information
       # about setting up the GitHub integration here: https://backstage.io/docs/getting-started/configuration#setting-up-a-github-integration
-      token: ${GITHUB_TOKEN}
     ### Example for how to add your GitHub Enterprise instance using the API:
     # - host: ghe.example.net
     #   apiBaseUrl: https://ghe.example.net/api/v3
@@ -46,10 +50,9 @@ integrations:
 proxy:
   ### Example for how to add a proxy endpoint for the frontend.
   ### A typical reason to do this is to handle HTTPS and CORS for internal services.
-  # endpoints:
-  #   '/test':
-  #     target: 'https://example.com'
-  #     changeOrigin: true
+  # '/test':
+  #   target: 'https://example.com'
+  #   changeOrigin: true
 
 # Reference documentation http://backstage.io/docs/features/techdocs/configuration
 # Note: After experimenting with basic setup, use CI/CD to generate docs
@@ -64,135 +67,60 @@ techdocs:
 
 auth:
   # see https://backstage.io/docs/auth/ to learn about auth providers
-  environment: development
   providers:
-    microsoftGraphOrg:
-        default:
-          tenantId: "16b3c013-d300-468d-ac64-7eda0820b6d3"
-          user:
-            filter: accountEnabled eq true and userType eq 'member'
-          group:
-            filter: >
-              securityEnabled eq false
-              and mailEnabled eq true
-              and groupTypes/any(c:c+eq+'Unified')
-          schedule:
-            frequency: PT1H
-            timeout: PT50M
+
     microsoft:
       development:
-        clientId: "7eda5496-d3ee-4b50-b46b-806892bc1662"
-        clientSecret: "-CV8Q~2YlFz9tuQJ5H_w-5v6CckWtir8aOb3BbyB"
-        tenantId: "16b3c013-d300-468d-ac64-7eda0820b6d3"
-        domainHint: "16b3c013-d300-468d-ac64-7eda0820b6d3"
-        additionalScopes:
-          - Mail.Send
+        clientId: '7eda5496-d3ee-4b50-b46b-806892bc1662'
+        clientSecret: '-CV8Q~2YlFz9tuQJ5H_w-5v6CckWtir8aOb3BbyB'
+        tenantId: '16b3c013-d300-468d-ac64-7eda0820b6d3'
+
+    github:
+      development:
+        clientId: ${GITHUB_CLIENT_ID}
+        clientSecret: ${GITHUB_CLIENT_SECRET}
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
 
-# catalog:
-#   import:
-#     entityFilename: catalog-info.yaml
-#     pullRequestBranchName: backstage-integration
-#   rules:
-#     - allow: [Component, System, API, Resource, Location]
-#   locations:
-#     # Local example data, file locations are relative to the backend process, typically `packages/backend`
-#     - type: file
-#       target: ../../examples/entities.yaml
-
-#     # Local example template
-#     - type: file
-#       target: ../../examples/template/template.yaml
-#       rules:
-#         - allow: [Template]
-
-#     # Local example organizational data
-#     - type: file
-#       target: ../../examples/org.yaml
-#       rules:
-#         - allow: [User, Group]
-
-#     ## Uncomment these lines to add more example data
-#     # - type: url
-#     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
-
-#     ## Uncomment these lines to add an example org
-#     # - type: url
-#     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
-#     #   rules:
-#     #     - allow: [User, Group]
-
-# app-config.yaml
 catalog:
-  providers:
-    microsoftGraphOrg:
+  providers: 
+    microsoftGraphOrg: 
       providerId:
         target: https://graph.microsoft.com/v1.0
         authority: https://login.microsoftonline.com
-        # If you don't know you tenantId, you can use Microsoft Graph Explorer
-        # to query it
-        tenantId: "16b3c013-d300-468d-ac64-7eda0820b6d3"
-        # Optional ClientId and ClientSecret if you don't want to use `DefaultAzureCredential`
-        # for authentication
-        # Client Id and Secret can be created under Certificates & secrets in
-        # the App registration in the Microsoft Azure Portal.
-        clientId: "7eda5496-d3ee-4b50-b46b-806892bc1662"
-        clientSecret: "-CV8Q~2YlFz9tuQJ5H_w-5v6CckWtir8aOb3BbyB"
-        # Optional mode for querying which defaults to "basic".
-        # By default, the Microsoft Graph API only provides the basic feature set
-        # for querying. Certain features are limited to advanced querying capabilities.
-        # (See https://docs.microsoft.com/en-us/graph/aad-advanced-queries)
-        queryMode: basic # basic | advanced
-        # Optional configuration block
-        user:
-          # Optional parameter to include the expanded resource or collection referenced
-          # by a single relationship (navigation property) in your results.
-          # Only one relationship can be expanded in a single request.
-          # See https://docs.microsoft.com/en-us/graph/query-parameters#expand-parameter
-          # Can be combined with userGroupMember[...] instead of userFilter.
-          expand: manager
-          # Optional filter for user, see Microsoft Graph API for the syntax
-          # See https://docs.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0#properties
-          # and for the syntax https://docs.microsoft.com/en-us/graph/query-parameters#filter-parameter
-          # This and userGroupMemberFilter are mutually exclusive, only one can be specified
-          filter: accountEnabled eq true and userType eq 'member'
-          # See  https://docs.microsoft.com/en-us/graph/api/resources/schemaextension?view=graph-rest-1.0
-          select: ['id', 'displayName', 'description']
-        # Optional configuration block
-        userGroupMember:
-          # Optional filter for users, use group membership to get users.
-          # (Filtered groups and fetch their members.)
-          # This and userFilter are mutually exclusive, only one can be specified
-          # See https://docs.microsoft.com/en-us/graph/search-query-parameter
-          filter: "displayName eq 'Backstage Users'"
-          # Optional search for users, use group membership to get users.
-          # (Search for groups and fetch their members.)
-          # This and userFilter are mutually exclusive, only one can be specified
-          search: '"description:One" AND ("displayName:Video" OR "displayName:Drive")'
-        # Optional configuration block
-        group:
-          # Optional parameter to include the expanded resource or collection referenced
-          # by a single relationship (navigation property) in your results.
-          # Only one relationship can be expanded in a single request.
-          # See https://docs.microsoft.com/en-us/graph/query-parameters#expand-parameter
-          # Can be combined with userGroupMember[...] instead of userFilter.
-          expand: member
-          # Optional filter for group, see Microsoft Graph API for the syntax
-          # See https://docs.microsoft.com/en-us/graph/api/resources/group?view=graph-rest-1.0#properties
-          filter: securityEnabled eq false and mailEnabled eq true and groupTypes/any(c:c+eq+'Unified')
-          # Optional search for groups, see Microsoft Graph API for the syntax
-          # See https://docs.microsoft.com/en-us/graph/search-query-parameter
-          search: '"description:One" AND ("displayName:Video" OR "displayName:Drive")'
-          # Optional select for groups, this will allow you work with schemaExtensions
-          # in order to add extra information to your groups that can be used on your custom groupTransformers
-          # See  https://docs.microsoft.com/en-us/graph/api/resources/schemaextension?view=graph-rest-1.0
-          select: ['id', 'displayName', 'description']
-        schedule: # optional; same options as in TaskScheduleDefinition
-          # supports cron, ISO duration, "human duration" as used in code
-          frequency: { hours: 1 }
-          # supports ISO duration, "human duration" as used in code
-          timeout: { minutes: 50 }
-          # supports ISO duration, "human duration" as used in code
-          initialDelay: { seconds: 15}
+        tenantId: '16b3c013-d300-468d-ac64-7eda0820b6d3'
+        clientId: '7eda5496-d3ee-4b50-b46b-806892bc1662'
+        clientSecret: '-CV8Q~2YlFz9tuQJ5H_w-5v6CckWtir8aOb3BbyB'
+        queryMode: basic
+  import:
+    entityFilename: catalog-info.yaml
+    pullRequestBranchName: backstage-integration
+  rules:
+    - allow: [Component, System, API, Resource, Location]
+  locations:
+    # Local example data, file locations are relative to the backend process, typically `packages/backend`
+    - type: file
+      target: ../../examples/entities.yaml
+
+    # Local example template
+    - type: file
+      target: ../../examples/template/template.yaml
+      rules:
+        - allow: [Template]
+
+    # Local example organizational data
+    - type: file
+      target: ../../examples/org.yaml
+      rules:
+        - allow: [User, Group]
+
+    ## Uncomment these lines to add more example data
+    # - type: url
+    #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
+
+    ## Uncomment these lines to add an example org
+    # - type: url
+    #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
+    #   rules:
+    #     - allow: [User, Group]

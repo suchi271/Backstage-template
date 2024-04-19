@@ -36,9 +36,8 @@ import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/
 
 import { AzResourceSelectorFieldExtension } from './scaffolder/azResourceSelector';
 import { ScaffolderFieldExtensions } from '@backstage/plugin-scaffolder-react';
-import { microsoftAuthApiRef } from '@backstage/core-plugin-api';
 import { SignInPage } from '@backstage/core-components';
-
+import { microsoftAuthApiRef } from '@backstage/core-plugin-api';
 
 const app = createApp({
   apis,
