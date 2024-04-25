@@ -65,20 +65,34 @@ techdocs:
   publisher:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
-auth:
-  # see https://backstage.io/docs/auth/ to learn about auth providers
-  providers:
+# auth:
+#   # see https://backstage.io/docs/auth/ to learn about auth providers
+#   providers:
 
+#     microsoft:
+#       development:
+#         clientId: '7eda5496-d3ee-4b50-b46b-806892bc1662'
+#         clientSecret: '-CV8Q~2YlFz9tuQJ5H_w-5v6CckWtir8aOb3BbyB'
+#         tenantId: '16b3c013-d300-468d-ac64-7eda0820b6d3'
+
+#     github:
+#       development:
+#         clientId: ${GITHUB_CLIENT_ID}
+#         clientSecret: ${GITHUB_CLIENT_SECRET}
+
+auth:
+  environment: development
+  providers:
     microsoft:
       development:
         clientId: '7eda5496-d3ee-4b50-b46b-806892bc1662'
         clientSecret: '-CV8Q~2YlFz9tuQJ5H_w-5v6CckWtir8aOb3BbyB'
         tenantId: '16b3c013-d300-468d-ac64-7eda0820b6d3'
-
-    github:
-      development:
-        clientId: ${GITHUB_CLIENT_ID}
-        clientSecret: ${GITHUB_CLIENT_SECRET}
+        signIn:
+          resolvers:
+            - resolver: emailMatchingUserEntityAnnotation
+            - resolver: emailMatchingUserEntityProfileEmail
+            - resolver: emailLocalPartMatchingUserEntityName
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
